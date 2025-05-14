@@ -20,20 +20,128 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Define plugin constants
 define('QUIZ_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('QUIZ_PLUGIN_URL', plugin_dir_url(__FILE__));
-
-// Include required files
-require_once QUIZ_PLUGIN_PATH . 'includes/class-quiz-post-type.php';
-require_once QUIZ_PLUGIN_PATH . 'includes/class-quiz-rest-controller.php';
+define('QUIZ_PLUGIN_VERSION', '0.1.0');
 
 /**
- * Initialize the plugin
+ * Autoload the classes
  */
-function quiz_plugin_init() {
-    // Initialize REST API controller
-    $rest_controller = new Quiz_REST_Controller();
-    $rest_controller->register_routes();
+spl_autoload_register(
+    function ( $class_name ) {
+        $namespace = 'QuizPlugin\\';
+
+        if ( strpos( $class_name, $namespace ) !== 0 ) {
+            return;
+        }
+
+        $class_path = str_replace( $namespace, '', $class_name );
+        $class_path = str_replace( '\\', DIRECTORY_SEPARATOR, $class_path );
+        $file       = QUIZ_PLUGIN_PATH . 'includes/' . $class_path . '.php';
+
+        if ( file_exists( $file ) ) {
+            require_once $file;
+        }
+    }
+);
+
+/**
+ * The main plugin class
+ */
+final class Quiz_Plugin {
+    /**
+     * Plugin version
+     *
+     * @var string
+     */
+    const VERSION = '0.1.0';
+
+    /**
+     * Class constructor
+     */
+    private function __construct() {
+        $this->define_constants();
+        register_activation_hook( __FILE__, array( $this, 'activate' ) );
+        add_action( 'plugins_loaded', array( $this, 'init_plugin' ) );
+        add_action( 'init', array( $this, 'register_quiz_post_type' ) );
+    }
+
+    /**
+     * Initialize a singleton instance
+     *
+     * @return \Quiz_Plugin
+     */
+    public static function init() {
+        static $instance = false;
+
+        if ( ! $instance ) {
+            $instance = new self();
+        }
+
+        return $instance;
+    }
+
+    /**
+     * Define constants
+     */
+    private function define_constants() {
+        define( 'QUIZ_PLUGIN_FILE', __FILE__ );
+        define( 'QUIZ_PLUGIN_ASSETS', QUIZ_PLUGIN_URL . '/build' );
+    }
+
+    /**
+     * Initialize plugin
+     */
+    public function init_plugin() {
+        new QuizPlugin\API();
+    }
+
+    /**
+     * Register Quiz Custom Post Type
+     */
+    public function register_quiz_post_type() {
+        register_post_type(
+            'quiz',
+            array(
+                'labels' => array(
+                    'name'          => __('Quizzes', 'quiz-plugin'),
+                    'singular_name' => __('Quiz', 'quiz-plugin'),
+                    'add_new_item'  => __('Add New Quiz', 'quiz-plugin'),
+                ),
+                'public'       => true,
+                'has_archive'  => true,
+                'show_in_rest' => true,
+                'supports'     => array(
+                    'title',
+                    'editor',
+                    'thumbnail',
+                    'excerpt',
+                    'custom-fields',
+                ),
+                'menu_icon'    => 'dashicons-welcome-learn-more',
+                'menu_position' => 20,
+                'rewrite'      => array('slug' => 'quizzes'),
+            )
+        );
+    }
+
+    /**
+     * Activate plugin
+     */
+    public function activate() {
+        $installed = get_option( 'quiz_plugin_installed' );
+
+        if ( ! $installed ) {
+            update_option( 'quiz_plugin_installed', time() );
+        }
+
+        update_option( 'quiz_plugin_version', QUIZ_PLUGIN_VERSION );
+
+        // Clear permalinks
+        flush_rewrite_rules();
+    }
 }
-add_action('rest_api_init', 'quiz_plugin_init');
+
+// Initialize the plugin
+Quiz_Plugin::init();
 
 /**
  * Register block assets
@@ -73,16 +181,16 @@ function quiz_plugin_enqueue_scripts() {
     if (has_block('create-block/quiz-plugin')) {
         wp_enqueue_style(
             'quiz-plugin-style',
-            QUIZ_PLUGIN_URL . 'build/quiz-plugin/style-index.css',
+            QUIZ_PLUGIN_URL . 'build/quiz/style-index.css',
             array(),
-            filemtime(QUIZ_PLUGIN_PATH . 'build/quiz-plugin/style-index.css')
+            filemtime(QUIZ_PLUGIN_PATH . 'build/quiz/style-index.css')
         );
 
         wp_enqueue_script(
             'quiz-plugin-view',
-            QUIZ_PLUGIN_URL . 'build/quiz-plugin/view.js',
+            QUIZ_PLUGIN_URL . 'build/quiz/view.js',
             array('wp-element', 'wp-api-fetch'),
-            filemtime(QUIZ_PLUGIN_PATH . 'build/quiz-plugin/view.js'),
+            filemtime(QUIZ_PLUGIN_PATH . 'build/quiz/view.js'),
             true
         );
     }

@@ -1,25 +1,38 @@
 <?php
 // This file is generated. Do not modify it manually.
 return array(
-	'quiz-plugin' => array(
+	'quiz' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
-		'name' => 'create-block/quiz-plugin',
-		'version' => '0.1.0',
-		'title' => 'Quiz Plugin',
+		'name' => 'quiz-plugin/quiz',
+		'version' => '1.0.0',
+		'title' => 'Quiz Block',
 		'category' => 'widgets',
-		'icon' => 'smiley',
-		'description' => 'Example block scaffolded with Create Block tool.',
+		'icon' => 'forms',
+		'description' => 'A quiz block for creating interactive quizzes',
 		'example' => array(
 			
 		),
+		'keywords' => array(
+			'quiz',
+			'assessment',
+			'test'
+		),
 		'supports' => array(
-			'html' => false
+			'html' => false,
+			'interactivity' => true
+		),
+		'attributes' => array(
+			'id' => array(
+				'type' => 'number',
+				'default' => 0
+			)
 		),
 		'textdomain' => 'quiz-plugin',
 		'editorScript' => 'file:./index.js',
 		'editorStyle' => 'file:./index.css',
 		'style' => 'file:./style-index.css',
-		'viewScript' => 'file:./view.js'
+		'render' => 'file:./render.php',
+		'viewScriptModule' => 'file:./view.js'
 	)
 );
